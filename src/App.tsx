@@ -12,25 +12,149 @@ interface QuizQuestion {
 }
 
 export default function App() {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [studyGuideText, setStudyGuideText] = useState<string>('');
   const [quiz, setQuiz] = useState<QuizQuestion[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [processingFile, setProcessingFile] = useState(false);
   const [error, setError] = useState<string>('');
   const [numQuestions, setNumQuestions] = useState<number>(5);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [questionType, setQuestionType] = useState<'multiple-choice' | 'short-answer' | 'mixed'>('multiple-choice');
 
-  const handleFileUpload = async (uploadedFile: File) => {
-    setFile(uploadedFile);
+  // Initialize PDF.js worker once - set globally
+  const initializePdfJs = async () => {
+    try {
+      const pdfjsLib = await import('pdfjs-dist');
+      const version = pdfjsLib.version || '5.4.530';
+      
+      // Set worker source globally - must be set before any PDF operations
+      // Try .mjs first (newer format), fallback to .js if needed
+      if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+      }
+      
+      console.log('PDF.js initialized, version:', version);
+      console.log('PDF.js worker source:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+      
+      return pdfjsLib;
+    } catch (err) {
+      console.error('Failed to load PDF.js:', err);
+      throw new Error('Failed to initialize PDF.js. Please check your internet connection and refresh the page.');
+    }
+  };
+
+  const extractTextFromPdf = async (file: File, pdfjsLib: any): Promise<string> => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // Load PDF document
+      const loadingTask = pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        verbosity: 0, // Suppress warnings
+        useSystemFonts: true
+      });
+      
+      const pdf = await loadingTask.promise;
+      
+      // Extract text from all pages
+      const textParts: string[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        try {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          
+          // Extract text items and join them
+          const pageText = textContent.items
+            .map((item: any) => {
+              // Handle both string and text items
+              if (typeof item === 'string') {
+                return item;
+              }
+              return item.str || '';
+            })
+            .filter((text: string) => text.trim().length > 0)
+            .join(' ');
+          
+          if (pageText.trim()) {
+            textParts.push(pageText);
+          }
+        } catch (pageErr) {
+          console.warn(`Error reading page ${i} of ${file.name}:`, pageErr);
+          // Continue with other pages
+        }
+      }
+      
+      if (textParts.length === 0) {
+        throw new Error(`No text could be extracted from ${file.name}. The PDF might be image-based or encrypted.`);
+      }
+      
+      return textParts.join('\n\n');
+    } catch (err: any) {
+      console.error(`Error extracting text from PDF ${file.name}:`, err);
+      const errorMessage = err.message || 'Unknown error';
+      throw new Error(`Failed to read PDF ${file.name}: ${errorMessage}`);
+    }
+  };
+
+  const handleFileUpload = async (uploadedFiles: File[]) => {
+    setFiles(uploadedFiles);
     setError('');
+    setProcessingFile(true);
     
     try {
-      const text = await uploadedFile.text();
-      setStudyGuideText(text);
-    } catch (err) {
-      setError('Failed to read file. Please try again.');
-      console.error('Error reading file:', err);
+      const textParts: string[] = [];
+      let pdfjsLib: any = null;
+
+      // Process all files
+      for (const file of uploadedFiles) {
+        try {
+          let fileText = '';
+          
+          // Check if it's a PDF file
+          if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+            // Initialize PDF.js if not already done
+            if (!pdfjsLib) {
+              console.log('Initializing PDF.js...');
+              pdfjsLib = await initializePdfJs();
+              console.log('PDF.js initialized, worker:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+            }
+            
+            console.log(`Extracting text from PDF: ${file.name}`);
+            // Extract text from PDF
+            fileText = await extractTextFromPdf(file, pdfjsLib);
+            console.log(`Extracted ${fileText.length} characters from ${file.name}`);
+          } else {
+            // Handle text files (.txt, .md)
+            fileText = await file.text();
+          }
+          
+          if (fileText.trim()) {
+            textParts.push(`=== ${file.name} ===\n\n${fileText}`);
+          } else {
+            console.warn(`No text extracted from ${file.name}`);
+          }
+        } catch (fileErr: any) {
+          console.error(`Error processing file ${file.name}:`, fileErr);
+          // Continue with other files even if one fails
+          const errorMsg = fileErr.message || 'Unknown error';
+          textParts.push(`=== ${file.name} ===\n\n[Error: ${errorMsg}]`);
+        }
+      }
+      
+      if (textParts.length === 0) {
+        throw new Error('No text could be extracted from any of the uploaded files.');
+      }
+      
+      const combinedText = textParts.join('\n\n---\n\n');
+      setStudyGuideText(combinedText);
+      console.log(`Successfully processed ${textParts.length} file(s), total text length: ${combinedText.length}`);
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to read files. Please try again.';
+      setError(errorMsg);
+      console.error('Error reading files:', err);
+    } finally {
+      setProcessingFile(false);
     }
   };
 
@@ -277,7 +401,7 @@ export default function App() {
 
   const resetQuiz = () => {
     setQuiz(null);
-    setFile(null);
+    setFiles([]);
     setStudyGuideText('');
     setError('');
   };
@@ -297,7 +421,16 @@ export default function App() {
         {!quiz ? (
           <div className="bg-white rounded-2xl shadow-xl p-8">
             {/* File Upload Section */}
-            <FileUpload onFileUpload={handleFileUpload} file={file} />
+            {processingFile ? (
+              <div className="border-2 border-indigo-200 bg-indigo-50 rounded-lg p-6">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+                  <p className="text-gray-700">Processing {files.length} file{files.length > 1 ? 's' : ''}...</p>
+                </div>
+              </div>
+            ) : (
+              <FileUpload onFileUpload={handleFileUpload} files={files} />
+            )}
 
             {/* Study Guide Preview */}
             {studyGuideText && (

@@ -1,23 +1,33 @@
 import { Upload, File, X } from 'lucide-react';
 
 interface FileUploadProps {
-  onFileUpload: (file: File) => void;
-  file: File | null;
+  onFileUpload: (files: File[]) => void;
+  files: File[];
 }
 
-export function FileUpload({ onFileUpload, file }: FileUploadProps) {
+export function FileUpload({ onFileUpload, files }: FileUploadProps) {
+  const isValidFile = (file: File): boolean => {
+    return (
+      file.type === 'text/plain' || 
+      file.name.endsWith('.md') || 
+      file.name.endsWith('.txt') ||
+      file.type === 'application/pdf' ||
+      file.name.endsWith('.pdf')
+    );
+  };
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && (droppedFile.type === 'text/plain' || droppedFile.name.endsWith('.md') || droppedFile.name.endsWith('.txt'))) {
-      onFileUpload(droppedFile);
+    const droppedFiles = Array.from(e.dataTransfer.files).filter(isValidFile);
+    if (droppedFiles.length > 0) {
+      onFileUpload(droppedFiles);
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      onFileUpload(selectedFile);
+    const selectedFiles = Array.from(e.target.files || []).filter(isValidFile);
+    if (selectedFiles.length > 0) {
+      onFileUpload(selectedFiles);
     }
   };
 
@@ -25,13 +35,18 @@ export function FileUpload({ onFileUpload, file }: FileUploadProps) {
     e.preventDefault();
   };
 
-  const removeFile = () => {
-    onFileUpload(null as any);
+  const removeFile = (index: number) => {
+    const newFiles = files.filter((_, i) => i !== index);
+    onFileUpload(newFiles);
+  };
+
+  const removeAllFiles = () => {
+    onFileUpload([]);
   };
 
   return (
     <div>
-      {!file ? (
+      {files.length === 0 ? (
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -41,37 +56,53 @@ export function FileUpload({ onFileUpload, file }: FileUploadProps) {
             type="file"
             id="file-upload"
             className="hidden"
-            accept=".txt,.md"
+            accept=".txt,.md,.pdf"
+            multiple
             onChange={handleFileInput}
           />
           <label htmlFor="file-upload" className="cursor-pointer">
             <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-700 mb-2">
-              Drop your study guide here or <span className="text-indigo-600 font-medium">browse</span>
+              Drop your study guides here or <span className="text-indigo-600 font-medium">browse</span>
             </p>
-            <p className="text-sm text-gray-500">Supports .txt and .md files</p>
+            <p className="text-sm text-gray-500">Supports .txt, .md, and .pdf files (multiple files allowed)</p>
           </label>
         </div>
       ) : (
-        <div className="border-2 border-indigo-200 bg-indigo-50 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <File className="w-8 h-8 text-indigo-600" />
-              <div>
-                <p className="font-medium text-gray-900">{file.name}</p>
-                <p className="text-sm text-gray-500">
-                  {(file.size / 1024).toFixed(2)} KB
-                </p>
-              </div>
-            </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-700">
+              {files.length} file{files.length > 1 ? 's' : ''} selected
+            </p>
             <button
-              onClick={removeFile}
-              className="p-2 hover:bg-indigo-100 rounded-lg transition-colors"
-              aria-label="Remove file"
+              onClick={removeAllFiles}
+              className="text-sm text-indigo-600 hover:text-indigo-700 hover:underline"
             >
-              <X className="w-5 h-5 text-gray-600" />
+              Remove all
             </button>
           </div>
+          {files.map((file, index) => (
+            <div key={index} className="border-2 border-indigo-200 bg-indigo-50 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <File className="w-6 h-6 text-indigo-600" />
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">{file.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {(file.size / 1024).toFixed(2)} KB
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => removeFile(index)}
+                  className="p-2 hover:bg-indigo-100 rounded-lg transition-colors"
+                  aria-label="Remove file"
+                >
+                  <X className="w-4 h-4 text-gray-600" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

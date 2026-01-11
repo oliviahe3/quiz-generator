@@ -104,18 +104,8 @@ Please format your response as a JSON array with the following structure:
 
 Return ONLY the JSON array, no additional text or markdown formatting.`;
 
-    // Get the model - try gemini-1.5-flash first (faster and free tier), fallback to gemini-pro
-    let model;
-    try {
-      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    } catch (modelError) {
-      console.warn('Failed to use gemini-1.5-flash, trying gemini-pro:', modelError.message);
-      try {
-        model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-      } catch (fallbackError) {
-        throw new Error(`Failed to initialize model: ${fallbackError.message}`);
-      }
-    }
+    // Get the model - use gemini-2.0-flash (latest available model)
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     console.log(`Generating quiz: ${numQuestions} questions, ${difficulty} difficulty, ${questionType} type`);
     console.log(`Study guide length: ${studyGuideText.length} characters`);

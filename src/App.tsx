@@ -174,9 +174,11 @@ export default function App() {
 
     try {
       // Call the backend API to generate quiz using Gemini AI
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      // Use Vite proxy (relative path) which routes /api/* to http://localhost:5000
+      const apiEndpoint = '/api/generate-quiz';
       
-      const response = await fetch(`${API_URL}/api/generate-quiz`, {
+      console.log('Calling API endpoint:', apiEndpoint);
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -210,8 +212,8 @@ export default function App() {
       let errorMessage = err.message || 'Failed to generate quiz.';
       
       // Provide more specific error messages
-      if (errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-        errorMessage = 'Cannot connect to the server. Please make sure the backend server is running on port 5000.';
+      if (errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('ERR_CONNECTION_REFUSED')) {
+        errorMessage = 'Cannot connect to the server. Please make sure the backend server is running on port 5000. Check the backend terminal window for any errors.';
       } else if (errorMessage.includes('GEMINI_API_KEY') || errorMessage.includes('API key') || errorMessage.includes('not configured')) {
         errorMessage = 'Gemini API key is not configured. Please set a valid GEMINI_API_KEY in the server/.env file.';
       } else if (errorMessage.includes('API_KEY_INVALID') || errorMessage.includes('invalid API key')) {

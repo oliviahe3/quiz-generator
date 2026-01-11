@@ -173,227 +173,52 @@ export default function App() {
     setError('');
 
     try {
-      // Mock API call - Replace this with actual Gemini API integration
-      // To use real Gemini API, you'll need to:
-      // 1. Set up a backend server or serverless function
-      // 2. Store your GEMINI_API_KEY securely on the server
-      // 3. Make the API call from the server side
-      // 4. Pass numQuestions and difficulty as parameters
+      // Call the backend API to generate quiz using Gemini AI
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
+      const response = await fetch(`${API_URL}/api/generate-quiz`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          studyGuideText,
+          numQuestions,
+          difficulty,
+          questionType,
+        }),
+      });
 
-      // Mock quiz data based on study guide and selected options
-      const allMultipleChoiceQuestions: QuizQuestion[] = [
-        {
-          question: "What is the main topic covered in this study guide?",
-          type: 'multiple-choice',
-          options: [
-            "Introduction to the subject",
-            "Advanced concepts",
-            "Historical context",
-            "Practical applications"
-          ],
-          correctAnswer: 0,
-          explanation: "The study guide introduces fundamental concepts as the foundation for understanding."
-        },
-        {
-          question: "Which key concept is emphasized in the material?",
-          type: 'multiple-choice',
-          options: [
-            "Theoretical frameworks",
-            "Memorization techniques",
-            "Critical thinking",
-            "All of the above"
-          ],
-          correctAnswer: 3,
-          explanation: "Effective learning combines theory, memory strategies, and analytical skills."
-        },
-        {
-          question: "What approach does the study guide recommend?",
-          type: 'multiple-choice',
-          options: [
-            "Passive reading only",
-            "Active engagement with material",
-            "Last-minute cramming",
-            "Group study exclusively"
-          ],
-          correctAnswer: 1,
-          explanation: "Active engagement with material leads to better retention and understanding."
-        },
-        {
-          question: "How should you apply the concepts learned?",
-          type: 'multiple-choice',
-          options: [
-            "Through practice problems",
-            "By teaching others",
-            "In real-world scenarios",
-            "All of the above"
-          ],
-          correctAnswer: 3,
-          explanation: "Multiple application methods reinforce learning and deepen understanding."
-        },
-        {
-          question: "What is the recommended study strategy?",
-          type: 'multiple-choice',
-          options: [
-            "Spaced repetition",
-            "Single marathon session",
-            "Audio-only learning",
-            "Skimming content"
-          ],
-          correctAnswer: 0,
-          explanation: "Spaced repetition is proven to be the most effective method for long-term retention."
-        },
-        {
-          question: "Why is active recall important for learning?",
-          type: 'multiple-choice',
-          options: [
-            "It makes studying faster",
-            "It strengthens memory pathways",
-            "It's easier than reviewing",
-            "It requires no preparation"
-          ],
-          correctAnswer: 1,
-          explanation: "Active recall strengthens neural connections and improves long-term retention."
-        },
-        {
-          question: "What role does sleep play in learning?",
-          type: 'multiple-choice',
-          options: [
-            "It has no effect on learning",
-            "It consolidates memories",
-            "It only helps physical recovery",
-            "It weakens what you learned"
-          ],
-          correctAnswer: 1,
-          explanation: "During sleep, the brain consolidates and organizes information learned during the day."
-        },
-        {
-          question: "How can you improve understanding of complex topics?",
-          type: 'multiple-choice',
-          options: [
-            "Read faster",
-            "Skip difficult sections",
-            "Break into smaller parts",
-            "Memorize without understanding"
-          ],
-          correctAnswer: 2,
-          explanation: "Breaking complex topics into smaller, manageable parts makes them easier to understand."
-        },
-        {
-          question: "What is the benefit of self-testing?",
-          type: 'multiple-choice',
-          options: [
-            "It wastes study time",
-            "It identifies knowledge gaps",
-            "It's only for final exams",
-            "It creates unnecessary stress"
-          ],
-          correctAnswer: 1,
-          explanation: "Self-testing helps identify what you know and what needs more review."
-        },
-        {
-          question: "Why should you vary your study environment?",
-          type: 'multiple-choice',
-          options: [
-            "To avoid boredom only",
-            "It has no real benefit",
-            "It strengthens memory retrieval",
-            "To impress others"
-          ],
-          correctAnswer: 2,
-          explanation: "Varied environments create multiple retrieval cues, making recall easier in different contexts."
-        }
-      ];
-
-      const allShortAnswerQuestions: QuizQuestion[] = [
-        {
-          question: "Define spaced repetition and explain why it's effective for learning.",
-          type: 'short-answer',
-          correctAnswer: "Spaced repetition is a learning technique where you review material at increasing intervals over time. It's effective because it strengthens long-term memory by leveraging the spacing effect, which improves retention better than cramming.",
-          explanation: "Spaced repetition works by timing reviews just as you're about to forget information, which strengthens memory traces and leads to better long-term retention."
-        },
-        {
-          question: "What is active recall and how does it differ from passive review?",
-          type: 'short-answer',
-          correctAnswer: "Active recall is retrieving information from memory without looking at notes. Unlike passive review (like rereading), it actively strengthens neural pathways and reveals what you actually know versus what you think you know.",
-          explanation: "Active recall forces your brain to retrieve information, which strengthens memory pathways more effectively than passive methods like rereading or highlighting."
-        },
-        {
-          question: "Explain the Feynman Technique in your own words.",
-          type: 'short-answer',
-          correctAnswer: "The Feynman Technique is a learning method where you explain a concept in simple terms as if teaching someone else. This reveals gaps in understanding and forces you to truly comprehend the material rather than just memorizing it.",
-          explanation: "By explaining concepts simply, you identify what you truly understand and what needs more study, leading to deeper comprehension."
-        },
-        {
-          question: "What is metacognition and why is it important for effective learning?",
-          type: 'short-answer',
-          correctAnswer: "Metacognition is thinking about your own thinking - being aware of how you learn and understand. It's important because it helps you identify effective study strategies, recognize knowledge gaps, and adjust your learning approach.",
-          explanation: "Metacognition allows learners to monitor their understanding and regulate their learning strategies for better outcomes."
-        },
-        {
-          question: "Describe the testing effect and its benefits.",
-          type: 'short-answer',
-          correctAnswer: "The testing effect shows that retrieval practice (self-testing) significantly enhances long-term learning compared to restudying. Testing strengthens memory and improves the ability to apply knowledge in different contexts.",
-          explanation: "Self-testing not only assesses knowledge but actively strengthens it through the act of retrieval."
-        },
-        {
-          question: "What is interleaved practice and how does it improve learning?",
-          type: 'short-answer',
-          correctAnswer: "Interleaved practice is mixing different topics or types of problems during study sessions rather than focusing on one at a time. It improves learning by forcing the brain to differentiate between concepts and strengthens long-term retention.",
-          explanation: "Mixing topics requires more mental effort but leads to better discrimination between concepts and stronger retention."
-        },
-        {
-          question: "Explain how elaboration enhances memory and understanding.",
-          type: 'short-answer',
-          correctAnswer: "Elaboration involves connecting new information to existing knowledge by creating meaningful associations, examples, or explanations. It enhances memory by building a richer network of connections in the brain, making information easier to recall and understand.",
-          explanation: "Creating connections between new and existing knowledge creates multiple retrieval pathways and deepens understanding."
-        },
-        {
-          question: "Why is distributed practice more effective than massed practice (cramming)?",
-          type: 'short-answer',
-          correctAnswer: "Distributed practice spreads learning over time, which allows for better memory consolidation and retention. Massed practice (cramming) may work for short-term recall but fails to create strong long-term memories because the brain needs time between sessions to consolidate information.",
-          explanation: "The spacing between study sessions allows the brain to consolidate memories, leading to much stronger long-term retention than cramming."
-        },
-        {
-          question: "How do concept maps support learning and understanding?",
-          type: 'short-answer',
-          correctAnswer: "Concept maps visually represent relationships between ideas, showing how concepts connect and relate to each other. They support learning by helping organize information, reveal patterns, and create a clear mental structure for complex topics.",
-          explanation: "Visual organization of information helps learners see the big picture and understand how individual concepts fit together."
-        },
-        {
-          question: "Why does teaching others help you learn better?",
-          type: 'short-answer',
-          correctAnswer: "Teaching others forces you to organize, articulate, and simplify your knowledge, which reveals gaps in understanding. It requires deep comprehension rather than surface-level memorization, and explaining concepts reinforces your own learning.",
-          explanation: "The process of teaching requires true understanding and helps consolidate knowledge through active explanation and answering questions."
-        }
-      ];
-
-      let mockQuiz: QuizQuestion[];
-      
-      if (questionType === 'multiple-choice') {
-        mockQuiz = allMultipleChoiceQuestions.slice(0, Math.min(numQuestions, allMultipleChoiceQuestions.length));
-      } else if (questionType === 'short-answer') {
-        mockQuiz = allShortAnswerQuestions.slice(0, Math.min(numQuestions, allShortAnswerQuestions.length));
-      } else {
-        // Mixed: alternate between types
-        const mixedQuestions: QuizQuestion[] = [];
-        const mcCount = Math.ceil(numQuestions / 2);
-        const saCount = Math.floor(numQuestions / 2);
-        
-        for (let i = 0; i < numQuestions; i++) {
-          if (i % 2 === 0 && mixedQuestions.length < mcCount && i / 2 < allMultipleChoiceQuestions.length) {
-            mixedQuestions.push(allMultipleChoiceQuestions[i / 2]);
-          } else if (i % 2 === 1 && Math.floor(i / 2) < allShortAnswerQuestions.length) {
-            mixedQuestions.push(allShortAnswerQuestions[Math.floor(i / 2)]);
-          }
-        }
-        mockQuiz = mixedQuestions;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        const errorMsg = errorData.error || `Server error: ${response.status}`;
+        const details = errorData.details ? ` (${errorData.details})` : '';
+        throw new Error(errorMsg + details);
       }
 
-      setQuiz(mockQuiz);
-    } catch (err) {
-      setError('Failed to generate quiz. Please try again.');
+      const data = await response.json();
+      
+      if (!data.quiz || !Array.isArray(data.quiz)) {
+        console.error('Invalid response format:', data);
+        throw new Error('Invalid response format from server');
+      }
+
+      console.log(`Successfully generated ${data.quiz.length} quiz questions`);
+      setQuiz(data.quiz);
+    } catch (err: any) {
+      console.error('Quiz generation error:', err);
+      let errorMessage = err.message || 'Failed to generate quiz.';
+      
+      // Provide more specific error messages
+      if (errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        errorMessage = 'Cannot connect to the server. Please make sure the backend server is running on port 5000.';
+      } else if (errorMessage.includes('GEMINI_API_KEY') || errorMessage.includes('API key') || errorMessage.includes('not configured')) {
+        errorMessage = 'Gemini API key is not configured. Please set a valid GEMINI_API_KEY in the server/.env file.';
+      } else if (errorMessage.includes('API_KEY_INVALID') || errorMessage.includes('invalid API key')) {
+        errorMessage = 'Invalid Gemini API key. Please check your API key in server/.env file.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -541,7 +366,18 @@ export default function App() {
             {/* Error Message */}
             {error && (
               <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm text-red-600 font-medium mb-2">{error}</p>
+                {error.includes('GEMINI_API_KEY') && (
+                  <div className="mt-2 text-xs text-red-700">
+                    <p className="mb-1">To fix this:</p>
+                    <ol className="list-decimal list-inside space-y-1 ml-2">
+                      <li>Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="underline">https://makersuite.google.com/app/apikey</a></li>
+                      <li>Open <code className="bg-red-100 px-1 rounded">server/.env</code> file</li>
+                      <li>Replace <code className="bg-red-100 px-1 rounded">your_api_key_here</code> with your actual API key</li>
+                      <li>Restart the backend server</li>
+                    </ol>
+                  </div>
+                )}
               </div>
             )}
 
@@ -564,13 +400,6 @@ export default function App() {
               )}
             </button>
 
-            {/* API Integration Note */}
-            <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-800">
-                <strong>Note:</strong> This demo uses mock quiz data. To integrate with the real Gemini API, 
-                you'll need to set up a backend server with your API key stored securely.
-              </p>
-            </div>
           </div>
         ) : (
           <QuizDisplay quiz={quiz} onReset={resetQuiz} />
